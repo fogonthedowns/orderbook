@@ -11,16 +11,16 @@ import (
 )
 
 func TestBehavior(t *testing.T) {
-	actions := make(chan *Action)
+	Actions := make(chan *Action)
 	done := make(chan bool)
-	ob := NewOrderBook(actions)
+	ob := NewOrderBook(Actions)
 
 	log := make([]*Action, 0)
 	go func() {
 		for {
-			action := <-actions
+			action := <-Actions
 			log = append(log, action)
-			if action.actionType == AT_DONE {
+			if action.ActionType == AT_DONE {
 				done <- true
 				return
 			}
@@ -28,18 +28,18 @@ func TestBehavior(t *testing.T) {
 	}()
 
 	// Should all go into the book
-	ob.AddOrder(&Order{isBuy: false, id: "1", price: 50, amount: 50})
-	ob.AddOrder(&Order{isBuy: false, id: "2", price: 45, amount: 25})
-	ob.AddOrder(&Order{isBuy: false, id: "3", price: 45, amount: 25})
+	ob.AddOrder(&Order{IsBuy: false, Id: "1", Price: 50, Amount: 50})
+	ob.AddOrder(&Order{IsBuy: false, Id: "2", Price: 45, Amount: 25})
+	ob.AddOrder(&Order{IsBuy: false, Id: "3", Price: 45, Amount: 25})
 	// Should trigger three fills, two partial at 45 and one at 50
-	ob.AddOrder(&Order{isBuy: true, id: "4", price: 55, amount: 75})
+	ob.AddOrder(&Order{IsBuy: true, Id: "4", Price: 55, Amount: 75})
 	// Should cancel immediately
 	ob.CancelOrder("1")
 	// Should all go into the book
-	ob.AddOrder(&Order{isBuy: true, id: "5", price: 55, amount: 20})
-	ob.AddOrder(&Order{isBuy: true, id: "6", price: 50, amount: 15})
+	ob.AddOrder(&Order{IsBuy: true, Id: "5", Price: 55, Amount: 20})
+	ob.AddOrder(&Order{IsBuy: true, Id: "6", Price: 50, Amount: 15})
 	// Should trigger two fills, one partial at 55 and one at 50
-	ob.AddOrder(&Order{isBuy: false, id: "7", price: 45, amount: 25})
+	ob.AddOrder(&Order{IsBuy: false, Id: "7", Price: 45, Amount: 25})
 	ob.Done()
 
 	<-done
@@ -66,33 +66,33 @@ func TestBehavior(t *testing.T) {
 	}
 }
 
-func buildOrders(n int, priceMean, priceStd float64, maxAmount int32) []*Order {
+func buildOrders(n int, PriceMean, PriceStd float64, maxAmount int32) []*Order {
 	orders := make([]*Order, 0)
-	var price uint32
+	var Price uint32
 	for i := 0; i < n; i++ {
-		price = uint32(math.Abs(rand.NormFloat64()*priceStd + priceMean))
+		Price = uint32(math.Abs(rand.NormFloat64()*PriceStd + PriceMean))
 		orders = append(orders, &Order{
-			id:     strconv.Itoa(i + 1),
-			isBuy:  float64(price) >= priceMean,
-			price:  price,
-			amount: uint32(rand.Int31n(maxAmount)),
+			Id:     strconv.Itoa(i + 1),
+			IsBuy:  float64(Price) >= PriceMean,
+			Price:  Price,
+			Amount: uint32(rand.Int31n(maxAmount)),
 		})
 	}
 	return orders
 }
 
-func doPerfTest(n int, priceMean, priceStd float64, maxAmount int32) {
-	orders := buildOrders(n, priceMean, priceStd, maxAmount)
-	actions := make(chan *Action)
+func doPerfTest(n int, PriceMean, PriceStd float64, maxAmount int32) {
+	orders := buildOrders(n, PriceMean, PriceStd, maxAmount)
+	Actions := make(chan *Action)
 	done := make(chan bool)
-	ob := NewOrderBook(actions)
+	ob := NewOrderBook(Actions)
 	actionCount := 0
 
 	go func() {
 		for {
-			action := <-actions
+			action := <-Actions
 			actionCount++
-			if action.actionType == AT_DONE {
+			if action.ActionType == AT_DONE {
 				done <- true
 				return
 			}
@@ -107,7 +107,7 @@ func doPerfTest(n int, priceMean, priceStd float64, maxAmount int32) {
 	<-done
 	elapsed := time.Since(start)
 
-	fmt.Printf("Handled %v actions in %v at %v actions/second.\n",
+	fmt.Printf("Handled %v Actions in %v at %v Actions/second.\n",
 		actionCount, elapsed, int(float64(actionCount)/elapsed.Seconds()))
 }
 

@@ -15,64 +15,64 @@ const (
 )
 
 type Action struct {
-	actionType  ActionType `json:"actionType"`
-	orderId     string     `json:"orderId"`
-	fromOrderId string     `json:"fromOrderId"`
-	amount      uint32     `json:"amount"`
-	price       uint32     `json:"price"`
+	ActionType  ActionType `json:"ActionType"`
+	OrderId     string     `json:"OrderId"`
+	FromOrderId string     `json:"FromOrderId"`
+	Amount      uint32     `json:"Amount"`
+	Price       uint32     `json:"Price"`
 }
 
 func (a *Action) String() string {
-	return fmt.Sprintf("\nAction{actionType:%v,orderId:%v,fromOrderId:%v,amount:%v,price:%v}",
-		a.actionType, a.orderId, a.fromOrderId, a.amount, a.price)
+	return fmt.Sprintf("\nAction{ActionType:%v,OrderId:%v,FromOrderId:%v,Amount:%v,Price:%v}",
+		a.ActionType, a.OrderId, a.FromOrderId, a.Amount, a.Price)
 }
 
 func NewBuyAction(o *Order) *Action {
-	return &Action{actionType: AT_BUY, orderId: o.id, amount: o.amount,
-		price: o.price}
+	return &Action{ActionType: AT_BUY, OrderId: o.Id, Amount: o.Amount,
+		Price: o.Price}
 }
 
 func NewSellAction(o *Order) *Action {
-	return &Action{actionType: AT_SELL, orderId: o.id, amount: o.amount,
-		price: o.price}
+	return &Action{ActionType: AT_SELL, OrderId: o.Id, Amount: o.Amount,
+		Price: o.Price}
 }
 
-func NewCancelAction(id string) *Action {
-	return &Action{actionType: AT_CANCEL, orderId: id}
+func NewCancelAction(Id string) *Action {
+	return &Action{ActionType: AT_CANCEL, OrderId: Id}
 }
 
-func NewCancelledAction(id string) *Action {
-	return &Action{actionType: AT_CANCELLED, orderId: id}
+func NewCancelledAction(Id string) *Action {
+	return &Action{ActionType: AT_CANCELLED, OrderId: Id}
 }
 
 func NewPartialFilledAction(o *Order, fromOrder *Order) *Action {
-	return &Action{actionType: AT_PARTIAL_FILLED, orderId: o.id, fromOrderId: fromOrder.id,
-		amount: fromOrder.amount, price: fromOrder.price}
+	return &Action{ActionType: AT_PARTIAL_FILLED, OrderId: o.Id, FromOrderId: fromOrder.Id,
+		Amount: fromOrder.Amount, Price: fromOrder.Price}
 }
 
 func NewFilledAction(o *Order, fromOrder *Order) *Action {
-	return &Action{actionType: AT_FILLED, orderId: o.id, fromOrderId: fromOrder.id,
-		amount: o.amount, price: fromOrder.price}
+	return &Action{ActionType: AT_FILLED, OrderId: o.Id, FromOrderId: fromOrder.Id,
+		Amount: o.Amount, Price: fromOrder.Price}
 }
 
 func NewDoneAction() *Action {
-	return &Action{actionType: AT_DONE}
+	return &Action{ActionType: AT_DONE}
 }
 
-func ConsoleActionHandler(actions <-chan *Action, done chan<- bool) {
+func ConsoleActionHandler(Actions <-chan *Action, done chan<- bool) {
 	for {
-		a := <-actions
-		switch a.actionType {
+		a := <-Actions
+		switch a.ActionType {
 		case AT_BUY, AT_SELL:
 			fmt.Printf("%s - Order: %v, Amount: %v, Price: %v\n",
-				a.actionType, a.orderId, a.amount, a.price)
+				a.ActionType, a.OrderId, a.Amount, a.Price)
 		case AT_CANCEL, AT_CANCELLED:
-			fmt.Printf("%s - Order: %v\n", a.actionType, a.orderId)
+			fmt.Printf("%s - Order: %v\n", a.ActionType, a.OrderId)
 		case AT_PARTIAL_FILLED, AT_FILLED:
 			fmt.Printf("%s - Order: %v, Filled %v@%v, From: %v\n",
-				a.actionType, a.orderId, a.amount, a.price, a.fromOrderId)
+				a.ActionType, a.OrderId, a.Amount, a.Price, a.FromOrderId)
 		case AT_DONE:
-			fmt.Printf("%s\n", a.actionType)
+			fmt.Printf("%s\n", a.ActionType)
 			done <- true
 			return
 		default:
@@ -81,8 +81,8 @@ func ConsoleActionHandler(actions <-chan *Action, done chan<- bool) {
 	}
 }
 
-func NoopActionHandler(actions <-chan *Action) {
+func NoopActionHandler(Actions <-chan *Action) {
 	for {
-		<-actions
+		<-Actions
 	}
 }
