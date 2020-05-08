@@ -12,12 +12,12 @@ import (
 )
 
 func main() {
-    actions := make(chan *bx.Action)
+    Actions := make(chan *bx.Action)
     done := make(chan bool)
 
-    go bx.ConsoleActionHandler(actions, done)
+    go bx.ConsoleActionHandler(Actions, done)
 
-    ob := bx.NewOrderBook(actions)
+    ob := bx.NewOrderBook(Actions)
     ob.AddOrder(bx.NewOrder(1, false, 50, 50))
     ob.AddOrder(bx.NewOrder(2, false, 45, 25))
     ob.AddOrder(bx.NewOrder(3, false, 45, 25))
@@ -31,8 +31,8 @@ func main() {
 
 As the order book receives commands it generates action messages that needed to be handled to ensure durability. Two channels are used in this example: 
 
-- The `actions` channel is written to by the order book and read by an action handler. For debugging purposes a `ConsoleActionHandler` is included that simply prints actions to the console as they arrive.
-- When the `Done` command is issued the program should block on the action handler to finish processing outstanding actions. The `done` channel allows this syncrhonization.
+- The `Actions` channel is written to by the order book and read by an action handler. For debugging purposes a `ConsoleActionHandler` is included that simply prints Actions to the console as they arrive.
+- When the `Done` command is issued the program should block on the action handler to finish processing outstanding Actions. The `done` channel allows this syncrhonization.
 
 ## Future features
 

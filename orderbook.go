@@ -2,7 +2,7 @@ package orderbook
 
 import "fmt"
 
-const MAX_PRICE = 10000000
+const MAX_Price = 10000000
 
 type PricePoint struct {
 	orderHead *Order
@@ -14,7 +14,7 @@ func (pp *PricePoint) Insert(o *Order) {
 		pp.orderHead = o
 		pp.orderTail = o
 	} else {
-		pp.orderTail.next = o
+		pp.orderTail.Next = o
 		pp.orderTail = o
 	}
 }
@@ -30,133 +30,133 @@ const (
 )
 
 type Order struct {
-	id     string
-	isBuy  bool
-	price  uint32
-	amount uint32
-	status OrderStatus
-	next   *Order
+	Id     string
+	IsBuy  bool
+	Price  uint32
+	Amount uint32
+	Status OrderStatus
+	Next   *Order
 }
 
 func (o *Order) String() string {
-	return fmt.Sprintf("\nOrder{id:%v,isBuy:%v,price:%v,amount:%v}",
-		o.id, o.isBuy, o.price, o.amount)
+	return fmt.Sprintf("\nOrder{Id:%v,IsBuy:%v,Price:%v,Amount:%v}",
+		o.Id, o.IsBuy, o.Price, o.Amount)
 }
 
 func NewOrder(
-	id string,
-	isBuy bool,
-	price uint32,
-	amount uint32,
+	Id string,
+	IsBuy bool,
+	Price uint32,
+	Amount uint32,
 ) *Order {
-	return &Order{id: id, isBuy: isBuy, price: price, amount: amount,
-		status: OS_NEW}
+	return &Order{Id: Id, IsBuy: IsBuy, Price: Price, Amount: Amount,
+		Status: OS_NEW}
 }
 
 type OrderBook struct {
 	// These are more estimates than reportable values
-	ask        uint32
-	bid        uint32
-	orderIndex map[string]*Order
-	prices     [MAX_PRICE]*PricePoint
-	actions    chan<- *Action
+	Ask        uint32
+	Bid        uint32
+	OrderIndex map[string]*Order
+	Prices     [MAX_Price]*PricePoint
+	Actions    chan<- *Action
 }
 
-func NewOrderBook(actions chan<- *Action) *OrderBook {
+func NewOrderBook(Actions chan<- *Action) *OrderBook {
 	ob := new(OrderBook)
-	ob.bid = 0
-	ob.ask = MAX_PRICE
-	for i := range ob.prices {
-		ob.prices[i] = new(PricePoint)
+	ob.Bid = 0
+	ob.Ask = MAX_Price
+	for i := range ob.Prices {
+		ob.Prices[i] = new(PricePoint)
 	}
-	ob.actions = actions
-	ob.orderIndex = make(map[string]*Order)
+	ob.Actions = Actions
+	ob.OrderIndex = make(map[string]*Order)
 	return ob
 }
 
 func (ob *OrderBook) AddOrder(o *Order) {
 	// Try to fill immediately
-	if o.isBuy {
-		ob.actions <- NewBuyAction(o)
+	if o.IsBuy {
+		ob.Actions <- NewBuyAction(o)
 		ob.FillBuy(o)
 	} else {
-		ob.actions <- NewSellAction(o)
+		ob.Actions <- NewSellAction(o)
 		ob.FillSell(o)
 	}
 
 	// Into the book
-	if o.amount > 0 {
+	if o.Amount > 0 {
 		ob.openOrder(o)
 	}
 }
 
 func (ob *OrderBook) openOrder(o *Order) {
-	pp := ob.prices[o.price]
+	pp := ob.Prices[o.Price]
 	pp.Insert(o)
-	o.status = OS_OPEN
-	if o.isBuy && o.price > ob.bid {
-		ob.bid = o.price
-	} else if !o.isBuy && o.price < ob.ask {
-		ob.ask = o.price
+	o.Status = OS_OPEN
+	if o.IsBuy && o.Price > ob.Bid {
+		ob.Bid = o.Price
+	} else if !o.IsBuy && o.Price < ob.Ask {
+		ob.Ask = o.Price
 	}
-	ob.orderIndex[o.id] = o
+	ob.OrderIndex[o.Id] = o
 }
 
 func (ob *OrderBook) FillBuy(o *Order) {
-	for ob.ask < o.price && o.amount > 0 {
-		pp := ob.prices[ob.ask]
+	for ob.Ask < o.Price && o.Amount > 0 {
+		pp := ob.Prices[ob.Ask]
 		ppOrderHead := pp.orderHead
 		for ppOrderHead != nil {
 			ob.fill(o, ppOrderHead)
-			ppOrderHead = ppOrderHead.next
+			ppOrderHead = ppOrderHead.Next
 			pp.orderHead = ppOrderHead
 		}
-		ob.ask++
+		ob.Ask++
 	}
 }
 
 func (ob *OrderBook) FillSell(o *Order) {
-	for ob.bid >= o.price && o.amount > 0 {
-		pp := ob.prices[ob.bid]
+	for ob.Bid >= o.Price && o.Amount > 0 {
+		pp := ob.Prices[ob.Bid]
 		ppOrderHead := pp.orderHead
 		for ppOrderHead != nil {
 			ob.fill(o, ppOrderHead)
-			ppOrderHead = ppOrderHead.next
+			ppOrderHead = ppOrderHead.Next
 			pp.orderHead = ppOrderHead
 		}
-		ob.bid--
+		ob.Bid--
 	}
 }
 
 func (ob *OrderBook) fill(o, ppOrderHead *Order) {
-	if ppOrderHead.amount >= o.amount {
-		ob.actions <- NewFilledAction(o, ppOrderHead)
-		ppOrderHead.amount -= o.amount
-		o.amount = 0
-		o.status = OS_FILLED
+	if ppOrderHead.Amount >= o.Amount {
+		ob.Actions <- NewFilledAction(o, ppOrderHead)
+		ppOrderHead.Amount -= o.Amount
+		o.Amount = 0
+		o.Status = OS_FILLED
 		return
 	} else {
 		// Partial fill
-		if ppOrderHead.amount > 0 {
-			ob.actions <- NewPartialFilledAction(o, ppOrderHead)
-			o.amount -= ppOrderHead.amount
-			o.status = OS_PARTIAL
-			ppOrderHead.amount = 0
+		if ppOrderHead.Amount > 0 {
+			ob.Actions <- NewPartialFilledAction(o, ppOrderHead)
+			o.Amount -= ppOrderHead.Amount
+			o.Status = OS_PARTIAL
+			ppOrderHead.Amount = 0
 		}
 	}
 }
 
-func (ob *OrderBook) CancelOrder(id string) {
-	ob.actions <- NewCancelAction(id)
-	if o, ok := ob.orderIndex[id]; ok {
-		// If this is the last order at a particular price point
-		// we need to update the bid/ask...right? Maybe not?
-		o.amount = 0
-		o.status = OS_CANCELLED
+func (ob *OrderBook) CancelOrder(Id string) {
+	ob.Actions <- NewCancelAction(Id)
+	if o, ok := ob.OrderIndex[Id]; ok {
+		// If this is the last order at a particular Price point
+		// we need to update the Bid/Ask...right? Maybe not?
+		o.Amount = 0
+		o.Status = OS_CANCELLED
 	}
-	ob.actions <- NewCancelledAction(id)
+	ob.Actions <- NewCancelledAction(Id)
 }
 
 func (ob *OrderBook) Done() {
-	ob.actions <- NewDoneAction()
+	ob.Actions <- NewDoneAction()
 }
