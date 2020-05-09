@@ -66,6 +66,52 @@ func TestBehavior(t *testing.T) {
 	}
 }
 
+func TestBugBehavior(t *testing.T) {
+	Actions := make(chan *Action)
+	done := make(chan bool)
+	ob := NewOrderBook(Actions)
+
+	log := make([]*Action, 0)
+	go func() {
+		for {
+			action := <-Actions
+			log = append(log, action)
+			if action.ActionType == AT_DONE {
+				done <- true
+				return
+			}
+		}
+	}()
+
+	// Should all go into the book
+	ob.AddOrder(&Order{IsBuy: false, Id: "ord_9566c74d10037c4d", Price: 967, Amount: 11})
+	ob.AddOrder(&Order{IsBuy: true, Id: "ord_7bbb0407d1e2c649", Price: 967, Amount: 5})
+	ob.AddOrder(&Order{IsBuy: true, Id: "ord_52fdfc072182654f", Price: 967, Amount: 10})
+	ob.AddOrder(&Order{IsBuy: true, Id: "ord_163f5f0f9a621d72", Price: 967, Amount: 12})
+
+	ob.AddOrder(&Order{IsBuy: false, Id: "ord_31656664326234372d373162612d346436332d383037612d646664383463343963313663", Price: 967, Amount: 6})
+	ob.AddOrder(&Order{IsBuy: false, Id: "ord_39303738346637342d376339322d343264362d613434642d313832656638366435663837", Price: 967, Amount: 16})
+	ob.Done()
+
+	<-done
+
+	expected := []*Action{
+		&Action{AT_SELL, "ord_9566c74d10037c4d", "", 11, 967},
+		&Action{AT_BUY, "ord_7bbb0407d1e2c649", "", 5, 967},
+		&Action{AT_FILLED, "ord_7bbb0407d1e2c649", "ord_9566c74d10037c4d", 5, 967},
+		&Action{AT_BUY, "ord_52fdfc072182654f", "", 10, 967},
+		&Action{AT_BUY, "ord_163f5f0f9a621d72", "", 12, 967},
+		&Action{AT_SELL, "ord_31656664326234372d373162612d346436332d383037612d646664383463343963313663", "", 6, 967},
+		&Action{AT_FILLED, "ord_31656664326234372d373162612d346436332d383037612d646664383463343963313663", "ord_52fdfc072182654f", 6, 967},
+		&Action{AT_SELL, "ord_39303738346637342d376339322d343264362d613434642d313832656638366435663837", "", 16, 967},
+		&Action{AT_PARTIAL_FILLED, "ord_39303738346637342d376339322d343264362d613434642d313832656638366435663837", "ord_163f5f0f9a621d72", 12, 967},
+		&Action{AT_DONE, "", "", 0, 0},
+	}
+	if !reflect.DeepEqual(log, expected) {
+		t.Error("\n\nExpected:\n\n", expected, "\n\nGot:\n\n", log, "\n\n")
+	}
+}
+
 func buildOrders(n int, PriceMean, PriceStd float64, maxAmount int32) []*Order {
 	orders := make([]*Order, 0)
 	var Price uint32

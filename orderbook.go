@@ -103,7 +103,7 @@ func (ob *OrderBook) openOrder(o *Order) {
 }
 
 func (ob *OrderBook) FillBuy(o *Order) {
-	for ob.Ask < o.Price && o.Amount > 0 {
+	for (ob.Ask <= o.Price) && (o.Amount > 0) {
 		pp := ob.Prices[ob.Ask]
 		ppOrderHead := pp.orderHead
 		for ppOrderHead != nil {
@@ -116,7 +116,7 @@ func (ob *OrderBook) FillBuy(o *Order) {
 }
 
 func (ob *OrderBook) FillSell(o *Order) {
-	for ob.Bid >= o.Price && o.Amount > 0 {
+	for (ob.Bid >= o.Price) && (o.Amount > 0) {
 		pp := ob.Prices[ob.Bid]
 		ppOrderHead := pp.orderHead
 		for ppOrderHead != nil {
