@@ -129,7 +129,7 @@ func (ob *OrderBook) FillSell(o *Order) {
 }
 
 func (ob *OrderBook) fill(o, ppOrderHead *Order) {
-	if ppOrderHead.Amount >= o.Amount {
+	if (ppOrderHead.Amount >= o.Amount) && (o.Amount > 0) {
 		ob.Actions <- NewFilledAction(o, ppOrderHead)
 		ppOrderHead.Amount -= o.Amount
 		o.Amount = 0
@@ -137,7 +137,7 @@ func (ob *OrderBook) fill(o, ppOrderHead *Order) {
 		return
 	} else {
 		// Partial fill
-		if ppOrderHead.Amount > 0 {
+		if ppOrderHead.Amount > 0 && (o.Amount > 0) {
 			ob.Actions <- NewPartialFilledAction(o, ppOrderHead)
 			o.Amount -= ppOrderHead.Amount
 			o.Status = OS_PARTIAL
