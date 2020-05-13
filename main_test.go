@@ -176,9 +176,47 @@ func TestSellLargeFirst(t *testing.T) {
 
 	expected := []*Action{
 		&Action{AT_SELL, "ord_1", "", 16, 967},
+		&Action{AT_BUY, "ord_4", "", 10, 967},
 		&Action{AT_FILLED, "ord_4", "ord_1", 10, 967},
+		&Action{AT_BUY, "ord_3", "", 2, 967},
+		&Action{AT_BUY, "ord_2", "", 4, 967},
+		&Action{AT_DONE, "", "", 0, 0},
+	}
+	if !reflect.DeepEqual(log, expected) {
+		t.Error("\n\nExpected:\n\n", expected, "\n\nGot:\n\n", log, "\n\n")
+	}
+}
+
+func TestSellLargeFirstIterationTwo(t *testing.T) {
+	Actions := make(chan *Action)
+	done := make(chan bool)
+	ob := NewOrderBook(Actions)
+
+	log := make([]*Action, 0)
+	go func() {
+		for {
+			action := <-Actions
+			log = append(log, action)
+			if action.ActionType == AT_DONE {
+				done <- true
+				return
+			}
+		}
+	}()
+
+	// does not work in the order of big then fill with + small + small + small
+	ob.AddOrder(&Order{IsBuy: false, Id: "ord_1", Price: 967, Amount: 6})
+	ob.AddOrder(&Order{IsBuy: true, Id: "ord_3", Price: 967, Amount: 2})
+	ob.AddOrder(&Order{IsBuy: true, Id: "ord_2", Price: 967, Amount: 4})
+	ob.Done()
+
+	<-done
+
+	expected := []*Action{
+		&Action{AT_SELL, "ord_1", "", 6, 967},
+		&Action{AT_BUY, "ord_3", "", 2, 967},
 		&Action{AT_FILLED, "ord_3", "ord_1", 2, 967},
-		&Action{AT_FILLED, "ord_2", "ord_1", 4, 967},
+		&Action{AT_BUY, "ord_2", "", 4, 967},
 		&Action{AT_DONE, "", "", 0, 0},
 	}
 	if !reflect.DeepEqual(log, expected) {
@@ -214,9 +252,10 @@ func TestBuyLargeFirst(t *testing.T) {
 
 	expected := []*Action{
 		&Action{AT_BUY, "ord_1", "", 16, 967},
+		&Action{AT_SELL, "ord_4", "", 10, 967},
 		&Action{AT_FILLED, "ord_4", "ord_1", 10, 967},
-		&Action{AT_FILLED, "ord_3", "ord_1", 2, 967},
-		&Action{AT_FILLED, "ord_2", "ord_1", 4, 967},
+		&Action{AT_SELL, "ord_3", "", 2, 967},
+		&Action{AT_SELL, "ord_2", "", 4, 967},
 		&Action{AT_DONE, "", "", 0, 0},
 	}
 	if !reflect.DeepEqual(log, expected) {
