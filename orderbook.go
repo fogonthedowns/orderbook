@@ -105,11 +105,11 @@ func (ob *OrderBook) openOrder(o *Order) {
 func (ob *OrderBook) FillBuy(o *Order) {
 	for (ob.Ask <= o.Price) && (o.Amount > 0) {
 		pp := ob.Prices[ob.Ask]
-		ppOrderHead := pp.orderHead
-		for ppOrderHead != nil {
-			ob.fill(o, ppOrderHead)
-			ppOrderHead = ppOrderHead.Next
-			pp.orderHead = ppOrderHead
+		OrderHead := pp.orderHead
+		for OrderHead != nil {
+			ob.fill(o, OrderHead)
+			OrderHead = OrderHead.Next
+			pp.orderHead = OrderHead
 		}
 		ob.Ask++
 	}
@@ -118,30 +118,30 @@ func (ob *OrderBook) FillBuy(o *Order) {
 func (ob *OrderBook) FillSell(o *Order) {
 	for (ob.Bid >= o.Price) && (o.Amount > 0) {
 		pp := ob.Prices[ob.Bid]
-		ppOrderHead := pp.orderHead
-		for ppOrderHead != nil {
-			ob.fill(o, ppOrderHead)
-			ppOrderHead = ppOrderHead.Next
-			pp.orderHead = ppOrderHead
+		OrderHead := pp.orderHead
+		for OrderHead != nil {
+			ob.fill(o, OrderHead)
+			OrderHead = OrderHead.Next
+			pp.orderHead = OrderHead
 		}
 		ob.Bid--
 	}
 }
 
-func (ob *OrderBook) fill(o, ppOrderHead *Order) {
-	if (ppOrderHead.Amount >= o.Amount) && (o.Amount > 0) {
-		ob.Actions <- NewFilledAction(o, ppOrderHead)
-		ppOrderHead.Amount -= o.Amount
+func (ob *OrderBook) fill(o, OrderHead *Order) {
+	if (OrderHead.Amount >= o.Amount) && (o.Amount > 0) {
+		ob.Actions <- NewFilledAction(o, OrderHead)
+		OrderHead.Amount -= o.Amount
 		o.Amount = 0
 		o.Status = OS_FILLED
 		return
 	} else {
 		// Partial fill
-		if ppOrderHead.Amount > 0 && (o.Amount > 0) {
-			ob.Actions <- NewPartialFilledAction(o, ppOrderHead)
-			o.Amount -= ppOrderHead.Amount
+		if OrderHead.Amount > 0 && (o.Amount > 0) {
+			ob.Actions <- NewPartialFilledAction(o, OrderHead)
+			o.Amount -= OrderHead.Amount
 			o.Status = OS_PARTIAL
-			ppOrderHead.Amount = 0
+			OrderHead.Amount = 0
 		}
 	}
 }
