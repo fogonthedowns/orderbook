@@ -16,6 +16,7 @@ const (
 
 type Action struct {
 	ActionType  ActionType `json:"ActionType"`
+	IsBuy       bool       `json:"IsBuy"`
 	OrderId     string     `json:"OrderId"`
 	FromOrderId string     `json:"FromOrderId"`
 	Amount      uint32     `json:"Amount"`
@@ -51,7 +52,7 @@ func NewPartialFilledAction(o *Order, fromOrder *Order) *Action {
 }
 
 func NewFilledAction(o *Order, fromOrder *Order) *Action {
-	return &Action{ActionType: AT_FILLED, OrderId: o.Id, FromOrderId: fromOrder.Id,
+	return &Action{ActionType: AT_FILLED, IsBuy: o.IsBuy, OrderId: o.Id, FromOrderId: fromOrder.Id,
 		Amount: o.Amount, Price: fromOrder.Price}
 }
 
